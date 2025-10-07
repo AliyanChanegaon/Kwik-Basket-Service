@@ -37,4 +37,61 @@ router.put("/me", authMiddleware, async (req: any, res) => {
   }
 })
 
+// Get addresses for current user
+router.get("/addresses", authMiddleware, async (req: any, res) => {
+  try {
+    const { data, error } = await supabase.from("addresses").select("*").eq("user_id", req.supabaseUser.id).order("id")
+    if (error) throw error
+    res.json(data || [])
+  } catch (error) {
+    console.error("[v0] Get addresses error:", error)
+    res.status(500).json({ error: "Failed to fetch addresses" })
+  }
+})
+
+// Create a new address for current user
+router.post("/addresses", authMiddleware, async (req: any, res) => {
+  try {
+    const payload = { ...req.body, user_id: req.supabaseUser.id }
+    const { data, error } = await supabase.from("addresses").insert(payload).select().single()
+    if (error) throw error
+    res.json(data)
+  } catch (error) {
+    console.error("[v0] Create address error:", error)
+    res.status(500).json({ error: "Failed to create address" })
+  }
+})
+
+// Update an existing address for current user
+router.put("/addresses/:id", authMiddleware, async (req: any, res) => {
+  try {
+    const id = Number(req.params.id)
+    const { data, error } = await supabase
+      .from("addresses")
+      .update(req.body)
+      .eq("id", id)
+      .eq("user_id", req.supabaseUser.id)
+      .select()
+      .single()
+    if (error) throw error
+    res.json(data)
+  } catch (error) {
+    console.error("[v0] Update address error:", error)
+    res.status(500).json({ error: "Failed to update address" })
+  }
+})
+
+// Delete an existing address for current user
+router.delete("/addresses/:id", authMiddleware, async (req: any, res) => {
+  try {
+    const id = Number(req.params.id)
+    const { error } = await supabase.from("addresses").delete().eq("id", id).eq("user_id", req.supabaseUser.id)
+    if (error) throw error
+    res.json({ success: true })
+  } catch (error) {
+    console.error("[v0] Delete address error:", error)
+    res.status(500).json({ error: "Failed to delete address" })
+  }
+})
+
 export default router
